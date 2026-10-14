@@ -2,26 +2,33 @@
 
 This template should help get you started developing with Vue 3 in Vite.
 
-## Recommended IDE Setup
+https://vueschool.io/articles/vuejs-tutorials/how-to-structure-a-large-scale-vue-js-application/
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
-
-## Recommended Browser Setup
-
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
-
-## Type Support for `.vue` Imports in TS
-
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vite.dev/config/).
+```
+src/
+├── app/                  # app-level wiring only
+│   ├── router/           # root router; imports each feature's routes
+│   ├── plugins/          # pinia, i18n, third-party setup
+│   └── App.vue
+├── shared/               # cross-feature and domain-agnostic
+│   ├── ui/               # BaseButton.vue, BaseModal.vue (the design system)
+│   ├── composables/      # useBreakpoint, useClipboard
+│   ├── lib/              # http client, date/format helpers
+│   └── types/
+├── features/             # the heart of the app: one folder per domain
+│   ├── auth/
+│   │   ├── components/    # LoginForm.vue and other auth-only components
+│   │   ├── composables/   # useAuth
+│   │   ├── stores/        # auth store (Pinia)
+│   │   ├── api/           # auth requests
+│   │   ├── pages/         # LoginPage.vue and other route-level views
+│   │   ├── routes.ts      # this feature's routes, merged in app/router
+│   │   └── types.ts
+│   ├── billing/          # same shape as auth/
+│   └── dashboard/        # same shape as auth/
+├── assets/
+└── main.ts
+```
 
 ## Project Setup
 

@@ -5,7 +5,7 @@
     "ms-playwright.playwright",
     "dbaeumer.vscode-eslint",
     "EditorConfig.EditorConfig",
-    "oxc.oxc-vscode",
+    // "oxc.oxc-vscode",
     "esbenp.prettier-vscode"
   ]
 }
