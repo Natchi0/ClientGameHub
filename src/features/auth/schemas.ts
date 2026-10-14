@@ -8,8 +8,12 @@ export const loginSchema = z.object({
 export const registerSchema = z
   .object({
     nickname: z.string().min(3, 'Mínimo 3 caracteres').max(20, 'Máximo 20 caracteres'),
-    email: z.string().min(1, 'Requerido'),
-    password: z.string().min(8, 'Mínimo 8 caracteres'), // alinear con IdentityOptions del backend
+    email: z.email().min(1, 'Requerido'),
+    password: z
+      .string()
+      .min(8, 'Mínimo 8 caracteres')
+      .regex(/[A-Z]/, { message: 'Debe contener al menos una mayúscula' })
+      .regex(/[0-9]/, 'Debe contener al menos un número'),
     confirmPassword: z.string().min(1, 'Requerido'),
   })
   .refine((d) => d.password === d.confirmPassword, {

@@ -28,6 +28,9 @@ export const appConfig = {
     baseUrl: str(env.VITE_API_BASE_URL, 'http://localhost:5045/api'),
     timeoutMs: num(env.VITE_API_TIMEOUT_MS, 15000),
   },
+  auth: {
+    tokenRefreshMargin: num(env.VITE_AUTH_TOKEN_REFRESH_MARGIN, 30000),
+  },
   i18n: {
     defaultLocale: oneOf(env.VITE_DEFAULT_LOCALE, ['es', 'en'] as const, 'es'),
   },

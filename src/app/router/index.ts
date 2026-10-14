@@ -29,10 +29,17 @@ router.afterEach((to) => {
 
 router.beforeEach(async (to) => {
   const auth = useAuthStore()
-  await auth.initGuest()
+
+  try {
+    await auth.ensureSession()
+  } catch (e) {
+    // las rutas con requiresAccount redirigen a login igualmente, se sigue
+    console.error('No se pudo asegurar la sesión', e)
+  }
 
   if (to.meta.requiresAccount && !auth.isRegistered)
     return { name: 'Login', query: { redirect: to.fullPath } }
+
   if (to.meta.guestOnly && auth.isRegistered) return { name: 'home' }
 
   const role = to.meta.requiredRole as string | undefined

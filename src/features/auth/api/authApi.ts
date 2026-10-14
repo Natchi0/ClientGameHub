@@ -1,5 +1,9 @@
 import { http } from '@/shared/lib/http'
-import type { LoginRequest, RegisterRequest, AuthResponse } from '../types'
+import type { LoginRequest, RegisterRequest, AuthResponse, UserDto } from '../types'
+
+export interface TokenResponse {
+  token: string
+}
 
 export const authApi = {
   async login(credentials: LoginRequest): Promise<AuthResponse> {
@@ -7,19 +11,19 @@ export const authApi = {
     return data
   },
 
-  async registerGuest() {
-    const { data } = await http.post('/auth/anonymous')
-    return data // Retorna { token }
+  async registerGuest(): Promise<TokenResponse> {
+    const { data } = await http.post<TokenResponse>('/auth/anonymous')
+    return data
   },
 
-  async registerAccount(payload: RegisterRequest) {
-    const { data } = await http.post('/auth/register', payload)
-    return data // Retorna { token }
+  async registerAccount(payload: RegisterRequest): Promise<TokenResponse> {
+    const { data } = await http.post<TokenResponse>('/auth/register', payload)
+    return data
   },
 
-  async getMe() {
-    const { data } = await http.get('/auth/me')
-    return data // Retorna UserDto
+  async getMe(): Promise<UserDto> {
+    const { data } = await http.get<UserDto>('/auth/me')
+    return data
   },
 
   async logout() {

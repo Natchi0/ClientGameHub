@@ -6,4 +6,5 @@ interface ImportMetaEnv {
   readonly VITE_API_TIMEOUT_MS?: string
   readonly VITE_DEFAULT_LOCALE?: string
   readonly VITE_DEBUG?: string
+  readonly VITE_AUTH_TOKEN_REFRESH_MARGIN?: string
 }
