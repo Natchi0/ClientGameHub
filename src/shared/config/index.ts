@@ -18,6 +18,7 @@ function oneOf<T extends string>(v: string | undefined, allowed: readonly T[], f
 }
 
 const env = import.meta.env
+const apiBaseUrl = str(env.VITE_API_BASE_URL, 'http://localhost:5045/api')
 
 export const appConfig = {
   app: {
@@ -25,8 +26,18 @@ export const appConfig = {
     description: str(env.VITE_APP_DESCRIPTION, 'Plataforma de juegos online'),
   },
   api: {
-    baseUrl: str(env.VITE_API_BASE_URL, 'http://localhost:5045/api'),
+    baseUrl: apiBaseUrl,
     timeoutMs: num(env.VITE_API_TIMEOUT_MS, 15000),
+  },
+  realtime: {
+    matchHubUrl: str(
+      new URL(env.VITE_MATCH_HUB_URL, apiBaseUrl).toString(),
+      new URL('/hubs/game', apiBaseUrl).toString(),
+    ),
+    realtimeHubUrl: str(
+      new URL(env.VITE_REALTIME_HUB_URL, apiBaseUrl).toString(),
+      new URL('/hubs/realtime', apiBaseUrl).toString(),
+    ),
   },
   auth: {
     tokenRefreshMargin: num(env.VITE_AUTH_TOKEN_REFRESH_MARGIN, 30000),

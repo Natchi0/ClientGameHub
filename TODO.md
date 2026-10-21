@@ -1,0 +1,1 @@
+El tema pueda ser configurable y el seleccionado se guarde en el localstorage para que el cliente ya lo tenga seleccionado al entrar, con 4 opciones (verder como actual, celeste/azul, amarillo/naranja, violeta).
