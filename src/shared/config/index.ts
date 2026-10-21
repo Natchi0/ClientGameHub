@@ -52,5 +52,6 @@ export const appConfig = {
     // constantes fijas, no vienen de .env
     token: 'auth_token',
     theme: 'theme',
+    themePalette: 'theme_palette',
   },
 } as const

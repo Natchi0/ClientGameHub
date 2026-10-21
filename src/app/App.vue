@@ -1,9 +1,9 @@
 <script setup lang="ts">
-  import { Gamepad2, LogOut, Menu, Moon, Sun } from '@lucide/vue'
-  import { computed, onBeforeUnmount, ref, watch } from 'vue'
+  import { Gamepad2, LogOut, Menu, MonitorSmartphone, Moon, Settings, Sun } from '@lucide/vue'
+  import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
   import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
   import { appConfig } from '@/shared/config'
-  import { useTheme } from '@/shared/composables/useTheme'
+  import { useTheme, type ThemePalette } from '@/shared/composables/useTheme'
   import { useAuthStore } from '@/features/auth/stores/authStore'
   import { Button } from '@/shared/ui/components/button'
   import { useRealtimeConnection } from '@/shared/composables/useRealtimeConnection'
@@ -12,9 +12,23 @@
   const auth = useAuthStore()
   const route = useRoute()
   const router = useRouter()
-  const { isDark, toggle } = useTheme()
+  const { isDark, mode, setMode, palette, setPalette } = useTheme()
   const menuOpen = ref(false)
   const isAuthPage = computed(() => route.meta.layout === 'auth')
+
+  const palettes: Array<{ value: ThemePalette; label: string; colors: string[] }> = [
+    { value: 'green', label: 'Verde', colors: ['#0c6d55', '#a4e85d'] },
+    { value: 'blue', label: 'Azul', colors: ['#2563eb', '#60a5fa'] },
+    { value: 'orange', label: 'Naranja', colors: ['#d97706', '#f59e0b'] },
+    { value: 'violet', label: 'Violeta', colors: ['#7c3aed', '#a78bfa'] },
+  ]
+  const themeMenuOpen = ref(false)
+  function selectPalette(p: ThemePalette) {
+    setPalette(p)
+  }
+  function selectMode(m: 'light' | 'dark' | 'system') {
+    setMode(m)
+  }
 
   // El componente raíz administra el ciclo de vida de la conexión.
   useRealtimeConnection()
@@ -28,7 +42,27 @@
 
   function closeMenu() {
     menuOpen.value = false
+    themeMenuOpen.value = false
   }
+
+  function handleClickOutside(e: MouseEvent) {
+    const target = e.target as HTMLElement
+    if (!target.closest('.theme-menu')) {
+      themeMenuOpen.value = false
+    }
+  }
+
+  onMounted(() => {
+    if (typeof window !== 'undefined') {
+      window.addEventListener('click', handleClickOutside)
+    }
+  })
+
+  onBeforeUnmount(() => {
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('click', handleClickOutside)
+    }
+  })
 
   //suscripción global al hub de notificaciones general
   let unsubscribe: (() => void) | undefined
@@ -88,16 +122,89 @@
         </div>
 
         <div class="ml-auto flex items-center gap-2">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            :aria-label="isDark ? 'Activar modo claro' : 'Activar modo oscuro'"
-            @click="toggle"
-          >
-            <Sun v-if="isDark" :size="18" />
-            <Moon v-else :size="18" />
-          </Button>
+          <div class="theme-menu relative">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label="Apariencia"
+              :aria-expanded="themeMenuOpen"
+              @click.stop="themeMenuOpen = !themeMenuOpen"
+            >
+              <Settings :size="18" />
+            </Button>
+            <div
+              v-if="themeMenuOpen"
+              class="absolute right-0 top-full z-50 mt-2 w-64 rounded-md border border-border bg-popover p-2 text-popover-foreground shadow-md"
+            >
+              <div class="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Tema</div>
+              <div class="flex flex-wrap gap-2 px-2 py-1.5">
+                <button
+                  v-for="p in palettes"
+                  :key="p.value"
+                  type="button"
+                  class="flex h-8 w-8 items-center justify-center overflow-hidden rounded-md border border-border"
+                  :class="{
+                    'ring-2 ring-ring ring-offset-1 ring-offset-background': palette === p.value,
+                  }"
+                  :aria-label="p.label"
+                  @click.stop="selectPalette(p.value)"
+                >
+                  <span class="h-full w-1/2" :style="{ backgroundColor: p.colors[0] }" />
+                  <span class="h-full w-1/2" :style="{ backgroundColor: p.colors[1] }" />
+                </button>
+              </div>
+              <div class="my-1 h-px bg-border" />
+              <div class="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Modo</div>
+              <div class="flex gap-1 px-1 py-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  :class="{ 'bg-accent text-accent-foreground': mode === 'light' }"
+                  @click.stop="selectMode('light')"
+                >
+                  <Sun :size="18" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  :class="{ 'bg-accent text-accent-foreground': mode === 'dark' }"
+                  @click.stop="selectMode('dark')"
+                >
+                  <Moon :size="18" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  :class="{ 'bg-accent text-accent-foreground': mode === 'system' }"
+                  @click.stop="selectMode('system')"
+                >
+                  <MonitorSmartphone :size="18" />
+                </Button>
+                <!-- <Sun
+                  :size="18"
+                  class="flex items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
+                  :class="{ 'bg-accent text-accent-foreground': mode === 'light' }"
+                  @click.stop="selectMode('light')"
+                />
+                <Moon
+                  :size="18"
+                  class="flex w-full h-auto items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
+                  :class="{ 'bg-accent text-accent-foreground': mode === 'dark' }"
+                  @click.stop="selectMode('dark')"
+                />
+                <MonitorSmartphone
+                  :size="18"
+                  class="flex w-full h-auto items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
+                  :class="{ 'bg-accent text-accent-foreground': mode === 'system' }"
+                  @click.stop="selectMode('system')"
+                /> -->
+              </div>
+            </div>
+          </div>
 
           <template v-if="auth.isRegistered">
             <span class="hidden rounded-md bg-muted px-3 py-1.5 text-sm font-semibold sm:inline">{{
