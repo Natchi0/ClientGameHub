@@ -12,7 +12,9 @@ const signalRMocks = vi.hoisted(() => {
     onreconnecting: vi.fn<(...args: never[]) => void>(),
     onreconnected: vi.fn<(...args: never[]) => void>(),
   }
-  const withUrl = vi.fn<(...args: never[]) => void>()
+  const withUrl = vi.fn<
+    (url: string, options: { accessTokenFactory: () => string | Promise<string> }) => void
+  >()
 
   class HubConnectionBuilderMock {
     withUrl(...args: [string, { accessTokenFactory: () => string | Promise<string> }]) {
