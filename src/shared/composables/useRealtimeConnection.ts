@@ -1,10 +1,12 @@
-import { onBeforeUnmount, onMounted, shallowRef, watch } from 'vue'
+import { onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { useAuthStore } from '@/features/auth/stores/authStore'
 import { createRealtimeHubClient } from '@/shared/lib/realtime/realtimeHub'
 import type { RealtimeHubClient } from '@/shared/lib/realtime/realtimeHubClient'
 
 // los componentes se suscriben mediante realtimeClient y eliminan sus suscripciones al desmontarse
 export const realtimeClient = shallowRef<RealtimeHubClient | null>(null)
+
+export const connectedUsersCount = ref<number | null>(null)
 
 export function useRealtimeConnection() {
   const auth = useAuthStore()
@@ -21,6 +23,7 @@ export function useRealtimeConnection() {
     if (userId === connectedUserId && realtimeClient.value) return
 
     const previous = realtimeClient.value
+    connectedUsersCount.value = null
     realtimeClient.value = null
     connectedUserId = null
 
@@ -32,6 +35,13 @@ export function useRealtimeConnection() {
     if (!userId || userId !== auth.claims?.sub) return
 
     const next = createRealtimeHubClient()
+
+    const unsubscribeCount = next.on<[number]>('ConnectedUsersCountUpdated', (count) => {
+      if (Number.isSafeInteger(count) && count >= 0) {
+        connectedUsersCount.value = count
+      }
+    })
+
     realtimeClient.value = next
     connectedUserId = userId
 
