@@ -1,8 +1,10 @@
 import { computed, ref, watch } from 'vue'
 import { appConfig } from '@/shared/config'
+import { DEFAULT_THEME_PALETTE, isThemePalette, type ThemePalette } from '@/shared/theme/palettes'
 
 export type ThemeMode = 'light' | 'dark' | 'system'
-export type ThemePalette = 'green' | 'blue' | 'orange' | 'violet'
+
+export type { ThemePalette }
 
 function loadMode(): ThemeMode {
   try {
@@ -17,16 +19,19 @@ function loadMode(): ThemeMode {
 function loadPalette(): ThemePalette {
   try {
     const v = localStorage.getItem(appConfig.storage.themePalette)
-    if (v === 'green' || v === 'blue' || v === 'orange' || v === 'violet') return v
+    if (isThemePalette(v)) return v
   } catch {
     /* storage bloqueado */
   }
-  return 'green'
+  return DEFAULT_THEME_PALETTE
 }
 
-const media = window.matchMedia('(prefers-color-scheme: dark)')
-const systemDark = ref(media.matches)
-media.addEventListener('change', (e) => (systemDark.value = e.matches))
+const media =
+  typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    ? window.matchMedia('(prefers-color-scheme: dark)')
+    : null
+const systemDark = ref(media?.matches ?? false)
+media?.addEventListener('change', (e) => (systemDark.value = e.matches))
 
 const mode = ref<ThemeMode>(loadMode())
 const palette = ref<ThemePalette>(loadPalette())
@@ -50,12 +55,7 @@ watch(
 watch(
   palette,
   (p) => {
-    const el = document.documentElement
-    if (p === 'green') {
-      el.removeAttribute('data-theme')
-    } else {
-      el.setAttribute('data-theme', p)
-    }
+    document.documentElement.setAttribute('data-theme', p)
     try {
       localStorage.setItem(appConfig.storage.themePalette, p)
     } catch {
