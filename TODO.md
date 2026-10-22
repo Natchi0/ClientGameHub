@@ -1,1 +1,7 @@
-El tema pueda ser configurable y el seleccionado se guarde en el localstorage para que el cliente ya lo tenga seleccionado al entrar, con 4 opciones (verder como actual, celeste/azul, amarillo/naranja, violeta).
+- [x] Tema configurable: 4 paletas (verde, celeste/azul, amarillo/naranja, violeta) + modo claro/oscuro/sistema, persistido en localStorage.
+- [x] Paleta y modo accesibles desde un único botón de apariencia, con muestras de color.
+- [x] Layouts intercambiables: registro en `src/app/layouts` + `meta.layout` por ruta, header y chrome centralizados.
+- [x] Identidad del usuario actual en el header (avatar + nickname), también para invitados.
+- [ ] Perfil del usuario: ver y subir avatar, editar nickname.
+- [ ] Layout de administración o con sidebar (extender el registro de `src/app/layouts`).
+- [ ] Notificaciones en tiempo real: UI en lugar del `console.log` actual.
