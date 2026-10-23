@@ -6,6 +6,15 @@ This is a Vue 3, TypeScript, and Vite client. Keep application wiring in `src/ap
 
 Unit tests are colocated in `src/**/__tests__/`; browser journeys live in `e2e/`.
 
+## Guest & Account Flow
+
+The app always runs with a session. The router guard calls `auth.ensureSession()`, which refreshes from the httpOnly cookie or, if that fails, creates a guest via `POST /auth/anonymous`; it then loads `/auth/me` into `authStore.user`.
+
+- A guest is a real `User` without an `Account` (so no email) and with the `Guest` role. `auth.isGuest` comes from the JWT claim.
+- Registering (`POST /auth/register`) links an `Account` to the **same** user, replaces `Guest` with `Player`, swaps the token, and refetches `/me`.
+- Use `requiresAccount` for account-only routes (guests are redirected to `Login`) and `guestOnly` to send registered users home. Role checks use `auth.hasRole` over the JWT `roles` claim.
+- Read profile data from `auth.user` (`/auth/me`), not from the token.
+
 ## Build, Test, and Development Commands
 
 - `npm install` installs dependencies (Node `^22.18.0` or `>=24.12.0`).
@@ -19,6 +28,7 @@ Unit tests are colocated in `src/**/__tests__/`; browser journeys live in `e2e/`
 
 Use TypeScript in Vue SFCs and follow Prettier: two-space indentation, no semicolons, single quotes, 100-character lines, and trailing commas. Name Vue components in PascalCase (`BaseInput.vue`, `LoginPage.vue`), composables with a `use` prefix (`useTheme.ts`), and feature folders in lowercase. Keep shared UI generic; do not import feature-specific code into `src/shared/`. Prefix intentionally unused variables or parameters with `_`.
 Comments must be purposeful and concise; avoid redundant or obvious comments. Use JSDoc for public APIs, and add `@internal` to private APIs. Avoid `any` and `unknown` types; prefer explicit types or generics. Use `const` for all variables unless reassignment is required. Use `let` only when necessary, and avoid `var`. Use `===` and `!==` for comparisons, and prefer `for...of` over traditional loops. Use `async/await` instead of `.then()` for promises.
+The app uses shadcn components and Tailwind CSS. Use the `cn` utility for conditional class names, and avoid inline styles. Before creating a new component from the ground up, check if a suitable one can be installed from shadcn with the `npx shadcn-ui add <component>` command or the shadcn-vue skill.
 
 ## Testing Guidelines
 

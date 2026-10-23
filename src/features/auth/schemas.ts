@@ -24,3 +24,12 @@ export const registerSchema = z
 export type LoginRequest = z.infer<typeof loginSchema>
 export type RegisterForm = z.infer<typeof registerSchema>
 export type RegisterRequest = Omit<RegisterForm, 'confirmPassword'>
+
+export const nicknameSchema = z.object({
+  nickname: z
+    .string()
+    .trim()
+    .min(1, 'Requerido')
+    .max(50, 'Máximo 50 caracteres'),
+})
+export type NicknameForm = z.infer<typeof nicknameSchema>

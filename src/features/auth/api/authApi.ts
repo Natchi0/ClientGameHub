@@ -26,6 +26,20 @@ export const authApi = {
     return data
   },
 
+  async updateNickname(userId: number, nickname: string): Promise<UserDto> {
+    const { data } = await http.patch<UserDto>(`/users/${userId}`, { nickname })
+    return data
+  },
+
+  async uploadAvatar(file: File): Promise<{ avatarUrl: string }> {
+    const formData = new FormData()
+    formData.append('avatar', file)
+    const { data } = await http.post<{ avatarUrl: string }>('/users/avatar', formData, {
+      headers: { 'Content-Type': undefined },
+    })
+    return data
+  },
+
   async logout() {
     http.post('/auth/logout')
   },

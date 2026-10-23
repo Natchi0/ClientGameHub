@@ -13,4 +13,10 @@ export const authRoutes: RouteRecordRaw[] = [
     component: () => import('./pages/RegisterPage.vue'),
     meta: { guestOnly: true, title: 'Crear cuenta', layout: 'auth' },
   },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: () => import('./pages/ProfilePage.vue'),
+    meta: { title: 'Perfil', layout: 'default' },
+  },
 ]

@@ -87,6 +87,18 @@ export const useAuthStore = defineStore('auth', () => {
   /** Garantiza sesión válida (refresh -> guest) y perfil cargado. Llamar desde el guard. */
   const ensureSession = () => single(doEnsureSession)
 
+  async function updateNickname(nickname: string) {
+    const userId = user.value?.id ?? Number(claims.value?.sub)
+    if (!Number.isInteger(userId) || userId <= 0) throw new Error('No hay una sesión activa')
+    user.value = await authApi.updateNickname(userId, nickname)
+  }
+
+  async function uploadAvatar(file: File) {
+    const { avatarUrl } = await authApi.uploadAvatar(file)
+    if (user.value) user.value = { ...user.value, avatar: avatarUrl }
+    else await fetchUser()
+  }
+
   async function login(credentials: LoginRequest) {
     const response = await authApi.login(credentials)
     setToken(response.token)
@@ -120,6 +132,8 @@ export const useAuthStore = defineStore('auth', () => {
     hasRole,
     ensureSession,
     fetchUser,
+    updateNickname,
+    uploadAvatar,
     login,
     register,
     logout,
