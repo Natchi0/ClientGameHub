@@ -1,10 +1,18 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { authRoutes } from '@/features/auth/routes'
+import { gamesRoutes } from '@/features/games/routes'
+import { matchesRoutes } from '@/features/matches/routes'
 import { useAuthStore } from '@/features/auth/stores/authStore'
 import { appConfig } from '@/shared/config'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) return savedPosition
+    // Cambiar de pestaña no debe mover el scroll; navegar a otra página sí.
+    if (to.path === from.path) return false
+    return { top: 0 }
+  },
   routes: [
     { path: '/', name: 'home', redirect: '/dashboard' },
     {
@@ -14,6 +22,8 @@ const router = createRouter({
       meta: { title: 'Inicio' },
     },
     ...authRoutes,
+    ...gamesRoutes,
+    ...matchesRoutes,
     // Ejemplo de ruta protegida para administradores
     // {
     //   path: '/admin',

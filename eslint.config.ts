@@ -17,7 +17,7 @@ export default defineConfigWithVueTs(
     files: ['**/*.{vue,ts,mts,tsx}'],
   },
 
-  globalIgnores(['**/dist/**', '**/dist-ssr/**', '**/coverage/**']),
+  globalIgnores(['**/dist/**', '**/dist-ssr/**', '**/coverage/**', '.agents/**']),
 
   ...pluginVue.configs['flat/essential'],
   vueTsConfigs.recommended,
@@ -32,6 +32,15 @@ export default defineConfigWithVueTs(
           caughtErrors: 'none',
         },
       ],
+    },
+  },
+
+  {
+    name: 'app/shadcn-component-names',
+    files: ['src/shared/ui/components/**/*.vue'],
+    rules: {
+      // Los componentes de shadcn usan nombres de una palabra (Button, Input, ...).
+      'vue/multi-word-component-names': 'off',
     },
   },
 

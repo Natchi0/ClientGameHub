@@ -34,6 +34,13 @@ export class RealtimeHubClient {
     return this.connection.disconnect()
   }
 
+  invoke<TResult extends JsonValue = null>(
+    methodName: string,
+    ...args: JsonValue[]
+  ): Promise<TResult> {
+    return this.connection.invoke<TResult>(methodName, ...args)
+  }
+
   on<TArgs extends readonly JsonValue[]>(
     eventName: string,
     handler: RealtimeEventHandler<TArgs>,

@@ -43,10 +43,10 @@
 
       <div v-if="!props.compact" class="ml-5 hidden items-center gap-1 md:flex">
         <RouterLink
-          to="/dashboard"
+          to="/games"
           class="rounded-md px-3 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           active-class="bg-muted text-foreground"
-          >Jugar</RouterLink
+          >Juegos</RouterLink
         >
         <a
           href="#friends"
@@ -92,10 +92,10 @@
     <div v-if="menuOpen && !props.compact" class="border-t border-border px-4 py-3 md:hidden">
       <div class="mx-auto flex max-w-7xl flex-col gap-1">
         <RouterLink
-          to="/dashboard"
+          to="/games"
           class="rounded-md px-3 py-2 text-sm font-semibold hover:bg-muted"
           @click="menuOpen = false"
-          >Jugar</RouterLink
+          >Juegos</RouterLink
         >
         <a
           href="#friends"

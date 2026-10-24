@@ -12,6 +12,7 @@ export function normalizeApiError(err: unknown): NormalizedError {
   const { status, data } = err.response
   if (status === 401) return { message: 'Credenciales inválidas', fieldErrors: {} }
   if (typeof data === 'string') return { message: data, fieldErrors: {} } // Results.Conflict("...")
+  if (typeof data?.error === 'string') return { message: data.error, fieldErrors: {} } // Results.BadRequest(new { error })
 
   const fieldErrors: Record<string, string> = {}
   if (data?.errors && typeof data.errors === 'object') {

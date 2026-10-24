@@ -36,7 +36,7 @@ export function useRealtimeConnection() {
 
     const next = createRealtimeHubClient()
 
-    const unsubscribeCount = next.on<[number]>('ConnectedUsersCountUpdated', (count) => {
+    next.on<[number]>('ConnectedUsersCountUpdated', (count) => {
       if (Number.isSafeInteger(count) && count >= 0) {
         connectedUsersCount.value = count
       }

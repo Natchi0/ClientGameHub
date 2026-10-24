@@ -1,5 +1,6 @@
 <script setup lang="ts">
   import { ArrowRight, CircleDot, Gamepad2, MessageCircle, Search, Users } from '@lucide/vue'
+  import { RouterLink } from 'vue-router'
   import { Button } from '@/shared/ui/components/button'
   import { connectedUsersCount } from '@/shared/composables/useRealtimeConnection'
 
@@ -73,7 +74,9 @@
     <section aria-labelledby="games-heading">
       <div class="mb-4 flex items-center justify-between gap-4">
         <h2 id="games-heading" class="text-2xl font-bold tracking-[-0.025em]">Juegos para vos</h2>
-        <Button variant="link" size="sm">Ver catálogo <ArrowRight data-icon="inline-end" /></Button>
+        <Button as-child variant="link" size="sm">
+          <RouterLink to="/games">Ver catálogo <ArrowRight data-icon="inline-end" /></RouterLink>
+        </Button>
       </div>
       <div class="overflow-hidden rounded-xl border border-border bg-card">
         <article
