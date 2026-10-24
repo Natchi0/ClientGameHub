@@ -60,6 +60,21 @@ describe('CreateMatchDialog', () => {
     expect(mockedGamesIndex).toHaveBeenCalledTimes(1)
   })
 
+  it('preseleciona el juego cuando se abre desde la ficha de un juego', async () => {
+    const wrapper = mount(CreateMatchDialog, {
+      props: { open: true, game },
+      global: { plugins: [createPinia()] },
+      attachTo: document.body,
+    })
+    await flushPromises()
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const vm = wrapper.vm as any
+    expect(vm.values.gameId).toBe(game.id)
+    // con el juego preseleccionado no hace falta el catálogo completo
+    expect(mockedGamesIndex).not.toHaveBeenCalled()
+  })
+
   it('crea una partida pública y emite created', async () => {
     mockedGamesIndex.mockResolvedValue([game])
     mockedCreateCustom.mockResolvedValue({
@@ -82,8 +97,8 @@ describe('CreateMatchDialog', () => {
     // Los select de reka-ui no abren de forma fiable en jsdom; se asignan los valores al modelo directamente.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const vm = wrapper.vm as any
-    vm.gameId = 1
-    vm.seat = 1
+    vm.values.gameId = 1
+    vm.values.seat = 1
     await flushPromises()
 
     const dialogContent = document.querySelector<HTMLElement>('[data-slot="dialog-content"]')
@@ -117,7 +132,61 @@ describe('CreateMatchDialog', () => {
 
     expect(mockedCreateCustom).not.toHaveBeenCalled()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    expect((wrapper.vm as any).fieldErrors.game).toBe('Elegí un juego.')
+    expect((wrapper.vm as any).errors.gameId).toBe('Elegí un juego.')
     expect(dialogContent!.textContent).toContain('Elegí un juego.')
+  })
+
+  it('oculta el selector de juego cuando se abre con un juego preseleccionado', async () => {
+    const wrapper = mount(CreateMatchDialog, {
+      props: { open: true, game },
+      global: { plugins: [createPinia()] },
+      attachTo: document.body,
+    })
+    await flushPromises()
+
+    const dialogContent = document.querySelector<HTMLElement>('[data-slot="dialog-content"]')
+    expect(dialogContent).not.toBeNull()
+    expect(dialogContent!.textContent).toContain(game.displayName)
+    expect(dialogContent!.textContent).not.toContain('Elegí un juego.')
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((wrapper.vm as any).values.gameId).toBe(game.id)
+    expect(mockedGamesIndex).not.toHaveBeenCalled()
+  })
+
+  it('no envía el formulario si falta una opción obligatoria del juego', async () => {
+    const gameWithRequiredConfig: GameDto = {
+      ...game,
+      configurations: [
+        {
+          id: 3,
+          configId: 2,
+          name: 'board-theme',
+          displayName: 'Tema del tablero',
+          description: null,
+          required: true,
+          defaultValue: null,
+          dataType: 3,
+          options: [{ id: 10, name: 'classic', displayName: 'Clásico', description: null }],
+        },
+      ],
+    }
+    mockedGamesIndex.mockResolvedValue([gameWithRequiredConfig])
+    const wrapper = mountDialog()
+    await flushPromises()
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const vm = wrapper.vm as any
+    vm.values.gameId = 1
+    vm.values.seat = 1
+    await flushPromises()
+
+    const dialogContent = document.querySelector<HTMLElement>('[data-slot="dialog-content"]')
+    const form = dialogContent!.querySelector('form')
+    form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    await flushPromises()
+
+    expect(mockedCreateCustom).not.toHaveBeenCalled()
+    expect(vm.errors.configurationValues).toBe('Completá las opciones obligatorias de la partida.')
   })
 })

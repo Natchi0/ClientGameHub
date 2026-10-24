@@ -1,15 +1,38 @@
-import { reactive, ref } from 'vue'
+import { reactive, ref, type Ref } from 'vue'
 import type { z } from 'zod'
 import { normalizeApiError } from '@/shared/lib/apiError'
 
-export function useZodForm<T extends Record<string, string>>(schema: z.ZodType<T>, initial: T) {
+export interface ZodFormApi<T extends object> {
+  values: T
+  errors: Ref<Record<string, string>>
+  formError: Ref<string | null>
+  submitting: Ref<boolean>
+  validateField: (name: keyof T & string) => void
+  handleSubmit: (onValid: (data: T) => Promise<void>) => () => Promise<void>
+}
+
+/**
+ * Estado, validación y envío de formularios con zod.
+ *
+ * `schema` puede ser un schema de zod o una función que lo genera en el momento
+ * del parse, para cuando la validación depende de contexto dinámico (ej. reglas
+ * que dependen del juego elegido en el momento de enviar).
+ */
+export function useZodForm<T extends object>(
+  schema: z.ZodType<T> | (() => z.ZodType<T>),
+  initial: T,
+): ZodFormApi<T> {
   const values = reactive({ ...initial }) as T
   const errors = ref<Record<string, string>>({})
   const formError = ref<string | null>(null)
   const submitting = ref(false)
 
+  function resolve(): z.ZodType<T> {
+    return typeof schema === 'function' ? schema() : schema
+  }
+
   function parse() {
-    const result = schema.safeParse(values)
+    const result = resolve().safeParse(values)
     const fieldErrors: Record<string, string> = {}
     if (!result.success) {
       for (const issue of result.error.issues) {

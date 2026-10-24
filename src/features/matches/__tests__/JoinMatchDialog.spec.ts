@@ -67,7 +67,7 @@ describe('JoinMatchDialog', () => {
   it('se une a una partida privada con contraseña y asiento', async () => {
     mockedJoin.mockResolvedValue({ ...match, joinCode: 'x' } as MatchDto)
 
-    const wrapper = mountDialog()
+    const _wrapper = mountDialog()
     await flushPromises()
 
     const dialogContent = document.querySelector<HTMLElement>('[data-slot="dialog-content"]')

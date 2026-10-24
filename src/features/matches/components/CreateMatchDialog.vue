@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { computed, reactive, ref, watch } from 'vue'
+  import { computed, ref, watch } from 'vue'
   import { Eye, EyeOff, Sparkles } from '@lucide/vue'
   import { normalizeApiError } from '@/shared/lib/apiError'
   import { gamesApi } from '@/features/games/api/gamesApi'
@@ -22,9 +22,11 @@
   } from '@/shared/ui/components/select'
   import { Button } from '@/shared/ui/components/button'
   import { Input } from '@/shared/ui/components/input'
+  import { useZodForm, type ZodFormApi } from '@/shared/composables/useZodForm'
   import { matchesApi } from '../api/matchesApi'
   import { generatePassword } from '../lib/presentation'
-  import { MatchVisibility, type MatchDto } from '../types'
+  import { MatchVisibility, type MatchConfigurationRequest, type MatchDto } from '../types'
+  import { createMatchFormSchema, type CreateMatchFormValues } from '../schemas'
 
   const props = defineProps<{
     open: boolean
@@ -40,39 +42,41 @@
   const games = ref<GameDto[]>([])
   const gamesLoading = ref(false)
   const gamesError = ref<string | null>(null)
-
-  const gameId = ref<number | null>(null)
-  const visibility = ref<MatchVisibility>(MatchVisibility.Public)
-  const seat = ref<string | null>(null)
-  const password = ref('')
   const showPassword = ref(false)
-  const submitting = ref(false)
-  const error = ref<string | null>(null)
-  const fieldErrors = ref<Record<string, string>>({})
-  const configValues = reactive<Record<number, string>>({})
 
-  const game = computed(() => games.value.find((g) => g.id === gameId.value) ?? null)
+  const form: ZodFormApi<CreateMatchFormValues> = useZodForm<CreateMatchFormValues>(
+    // el contexto (configuraciones obligatorias) sale del juego elegido al enviar
+    () => createMatchFormSchema(requiredConfigurationIds.value),
+    {
+      gameId: props.game?.id ?? null,
+      visibility: MatchVisibility.Public,
+      seat: null,
+      password: '',
+      configurationValues: {},
+    },
+  )
+  const { values, errors, formError, submitting, handleSubmit } = form
 
-  const isPrivate = computed(() => visibility.value === MatchVisibility.Private)
+  /** Juego elegido en el formulario. */
+  const selectedGame = computed(() => games.value.find((g) => g.id === values.gameId) ?? null)
+
+  const requiredConfigurationIds = computed(() =>
+    (selectedGame.value?.configurations ?? [])
+      .filter((configuration) => configuration.required)
+      .map((configuration) => configuration.id),
+  )
+
+  const isPrivate = computed(() => values.visibility === MatchVisibility.Private)
 
   const seatOptions = computed(() =>
-    game.value ? Array.from({ length: game.value.maxPlayers ?? 8 }, (_, index) => index + 1) : [],
+    selectedGame.value
+      ? Array.from({ length: selectedGame.value.maxPlayers ?? 8 }, (_, index) => index + 1)
+      : [],
   )
-
-  const missingRequiredConfigurations = computed(
-    () =>
-      game.value?.configurations.filter(
-        (configuration) =>
-          configuration.required && !String(configValues[configuration.id] ?? '').trim(),
-      ) ?? [],
-  )
-
-  const canCreate = computed(() => !!game.value && !submitting.value)
 
   async function loadGames() {
     if (props.game) {
       games.value = [props.game]
-      gameId.value = props.game.id
       return
     }
     gamesLoading.value = true
@@ -87,85 +91,59 @@
   }
 
   function resetForm() {
-    gameId.value = null
-    visibility.value = MatchVisibility.Public
-    seat.value = null
-    password.value = ''
+    values.gameId = props.game?.id ?? null
+    values.visibility = MatchVisibility.Public
+    values.seat = null
+    values.password = ''
     showPassword.value = false
-    error.value = null
-    fieldErrors.value = {}
-    for (const key of Object.keys(configValues)) delete configValues[Number(key)]
+    formError.value = null
+    errors.value = {}
+    for (const key of Object.keys(values.configurationValues)) {
+      delete values.configurationValues[key]
+    }
   }
 
-  function buildConfigurations() {
-    return (
-      game.value?.configurations
-        .filter((configuration) => String(configValues[configuration.id] ?? '').trim() !== '')
-        .map((configuration) => ({
-          gameConfigurationId: configuration.id,
-          value: String(configValues[configuration.id]).trim(),
-        })) ?? []
-    )
+  function buildConfigurations(): MatchConfigurationRequest[] {
+    const entries: MatchConfigurationRequest[] = []
+    for (const configuration of selectedGame.value?.configurations ?? []) {
+      const value = values.configurationValues[String(configuration.id)] ?? ''
+      if (value.trim() !== '') {
+        entries.push({ gameConfigurationId: configuration.id, value: value.trim() })
+      }
+    }
+    return entries
   }
 
   function generateNewPassword() {
-    password.value = generatePassword()
+    values.password = generatePassword()
     showPassword.value = true
-    fieldErrors.value = { ...fieldErrors.value, password: '' }
+    delete errors.value.password
   }
 
-  async function submit() {
-    error.value = null
-    fieldErrors.value = {}
-
-    if (!gameId.value) {
-      fieldErrors.value = { game: 'Elegí un juego.' }
-      return
-    }
-
-    if (isPrivate.value && !password.value.trim()) {
-      fieldErrors.value = { password: 'Ingresá una contraseña o generá una.' }
-      return
-    }
-
-    if (!seat.value) {
-      fieldErrors.value = { seat: 'Elegí un asiento.' }
-      return
-    }
-
-    if (missingRequiredConfigurations.value.length > 0) {
-      error.value = 'Completá las opciones obligatorias de la partida.'
-      return
-    }
-
-    submitting.value = true
-    try {
-      const match = await matchesApi.createCustom({
-        gameId: gameId.value,
-        visibility: visibility.value,
-        password: isPrivate.value ? password.value.trim() : null,
-        seat: seat.value ? Number(seat.value) : undefined,
-        configurations: buildConfigurations(),
-      })
-      emit('created', match)
-      emit('update:open', false)
-    } catch (caught) {
-      const normalized = normalizeApiError(caught)
-      fieldErrors.value = normalized.fieldErrors
-      error.value = normalized.fieldErrors.password
-        ? null
-        : (normalized.message ?? 'No se pudo crear la partida.')
-    } finally {
-      submitting.value = false
-    }
+  function setConfigurationValue(id: number, value: unknown) {
+    values.configurationValues[String(id)] = value === null ? '' : String(value)
   }
+
+  const submit = handleSubmit(async (data) => {
+    if (data.gameId === null || data.seat === null) return // descartado por el schema
+    const visibility = data.visibility as MatchVisibility // validado contra el enum por la UI
+    const match = await matchesApi.createCustom({
+      gameId: data.gameId,
+      visibility,
+      password: visibility === MatchVisibility.Private ? data.password.trim() : null,
+      seat: data.seat,
+      configurations: buildConfigurations(),
+    })
+    emit('created', match)
+    emit('update:open', false)
+  })
 
   watch(
     () => props.open,
     (isOpen) => {
       if (isOpen) {
-        void loadGames()
         resetForm()
+        void loadGames()
       }
     },
     { immediate: true },
@@ -177,16 +155,19 @@
     <DialogContent>
       <DialogHeader>
         <DialogTitle>Crear partida</DialogTitle>
-        <DialogDescription>
+        <DialogDescription v-if="props.game">
+          Partida para {{ props.game.displayName }}: elegí la visibilidad y las opciones.
+        </DialogDescription>
+        <DialogDescription v-else>
           Elegí el juego, la visibilidad y las opciones de la sala.
         </DialogDescription>
       </DialogHeader>
 
       <form @submit.prevent="submit" class="mt-5 space-y-5">
         <div class="grid gap-4 sm:grid-cols-2">
-          <div>
+          <div v-if="!props.game">
             <div class="text-sm font-semibold">Juego</div>
-            <Select v-model="gameId" class="w-full" :disabled="gamesLoading">
+            <Select v-model="values.gameId" class="w-full" :disabled="gamesLoading">
               <SelectTrigger>
                 <SelectValue placeholder="Elegí un juego" />
               </SelectTrigger>
@@ -196,14 +177,21 @@
                 </SelectItem>
               </SelectContent>
             </Select>
-            <p v-if="!gameId && !gamesLoading" class="mt-1 text-xs font-medium text-danger">
-              Elegí un juego.
+            <p
+              v-if="errors.gameId || (!values.gameId && !gamesLoading)"
+              class="mt-1 text-xs font-medium text-danger"
+            >
+              {{ errors.gameId ?? 'Elegí un juego.' }}
             </p>
           </div>
 
           <div>
             <div class="text-sm font-semibold">Visibilidad</div>
-            <Select v-model="visibility" class="w-full" :disabled="!gameId || gamesLoading">
+            <Select
+              v-model="values.visibility"
+              class="w-full"
+              :disabled="!values.gameId || gamesLoading"
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Elegí una visibilidad" />
               </SelectTrigger>
@@ -223,10 +211,10 @@
 
           <div>
             <div class="text-sm font-semibold">Tu asiento</div>
-            <Select v-model="seat" class="w-full" :disabled="!gameId || gamesLoading">
+            <Select v-model="values.seat" class="w-full" :disabled="!values.gameId || gamesLoading">
               <SelectTrigger>
                 <SelectValue
-                  :placeholder="game ? `Asiento ${seat || 1}` : 'Elegí un juego primero'"
+                  :placeholder="selectedGame ? 'Elegí un asiento' : 'Elegí un juego primero'"
                 />
               </SelectTrigger>
               <SelectContent>
@@ -235,7 +223,11 @@
                 </SelectItem>
               </SelectContent>
             </Select>
-            <p v-if="game?.maxPlayers === null" class="mt-1 text-xs text-muted-foreground">
+            <p v-if="errors.seat" class="mt-1 text-xs font-medium text-danger">{{ errors.seat }}</p>
+            <p
+              v-else-if="selectedGame?.maxPlayers === null"
+              class="mt-1 text-xs text-muted-foreground"
+            >
               Este juego no define un máximo; por ahora se ofrecen hasta 8 asientos.
             </p>
           </div>
@@ -246,20 +238,20 @@
           <div class="mt-2 flex flex-wrap gap-2">
             <Input
               id="dialog-match-password"
-              v-model="password"
+              v-model="values.password"
               :type="showPassword ? 'text' : 'password'"
               autocomplete="new-password"
               placeholder="Contraseña para unirse"
               class="min-w-40 flex-1"
-              :aria-invalid="!!fieldErrors.password"
-              :disabled="!gameId || gamesLoading"
+              :aria-invalid="!!errors.password"
+              :disabled="!values.gameId || gamesLoading"
             />
             <Button
               type="button"
               variant="outline"
               size="icon"
               :aria-label="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
-              :disabled="!gameId || gamesLoading"
+              :disabled="!values.gameId || gamesLoading"
               @click="showPassword = !showPassword"
             >
               <EyeOff v-if="showPassword" :size="16" />
@@ -268,25 +260,25 @@
             <Button
               type="button"
               variant="outline"
-              :disabled="!gameId || gamesLoading"
+              :disabled="!values.gameId || gamesLoading"
               @click="generateNewPassword"
             >
               <Sparkles :size="16" data-icon="inline-start" /> Generar
             </Button>
           </div>
-          <p v-if="fieldErrors.password" class="mt-1.5 text-xs font-medium text-danger">
-            {{ fieldErrors.password }}
+          <p v-if="errors.password" class="mt-1.5 text-xs font-medium text-danger">
+            {{ errors.password }}
           </p>
           <p class="mt-1.5 text-xs text-muted-foreground">
             El enlace de invitación permite entrar sin escribir la contraseña.
           </p>
         </div>
 
-        <div v-if="game?.configurations.length" class="mt-1">
+        <div v-if="selectedGame?.configurations.length" class="mt-1">
           <h4 class="text-sm font-semibold">Opciones de la partida</h4>
           <div class="mt-2 grid gap-4 sm:grid-cols-2">
             <div
-              v-for="configuration in game.configurations"
+              v-for="configuration in selectedGame.configurations"
               :key="configuration.id"
               class="space-y-1"
             >
@@ -298,62 +290,83 @@
                 {{ configuration.description }}
               </p>
 
-              <select
+              <Select
                 v-if="configuration.dataType === ConfigurationDataType.Select"
-                :id="`dialog-config-${configuration.id}`"
-                v-model="configValues[configuration.id]"
-                class="mt-2 h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-3"
+                :model-value="values.configurationValues[String(configuration.id)]"
+                class="mt-2 w-full"
                 :disabled="gamesLoading"
+                @update:model-value="setConfigurationValue(configuration.id, $event)"
               >
-                <option value="">
-                  {{ configuration.required ? 'Elegí una opción' : 'Predeterminado' }}
-                </option>
-                <option
-                  v-for="option in configuration.options"
-                  :key="option.id"
-                  :value="String(option.id)"
-                >
-                  {{ option.displayName }}
-                </option>
-              </select>
+                <SelectTrigger :id="`dialog-config-${configuration.id}`">
+                  <SelectValue
+                    :placeholder="configuration.required ? 'Elegí una opción' : 'Predeterminado'"
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem
+                    v-for="option in configuration.options"
+                    :key="option.id"
+                    :value="String(option.id)"
+                  >
+                    <SelectItemText>{{ option.displayName }}</SelectItemText>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
 
-              <select
+              <Select
                 v-else-if="configuration.dataType === ConfigurationDataType.Boolean"
-                :id="`dialog-config-${configuration.id}`"
-                v-model="configValues[configuration.id]"
-                class="mt-2 h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-3"
+                :model-value="values.configurationValues[String(configuration.id)]"
+                class="mt-2 w-full"
                 :disabled="gamesLoading"
+                @update:model-value="setConfigurationValue(configuration.id, $event)"
               >
-                <option value="">Predeterminado</option>
-                <option value="true">Sí</option>
-                <option value="false">No</option>
-              </select>
+                <SelectTrigger :id="`dialog-config-${configuration.id}`">
+                  <SelectValue placeholder="Predeterminado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">
+                    <SelectItemText>Sí</SelectItemText>
+                  </SelectItem>
+                  <SelectItem value="false">
+                    <SelectItemText>No</SelectItemText>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
 
               <Input
                 v-else
                 :id="`dialog-config-${configuration.id}`"
-                :model-value="configValues[configuration.id]"
+                :model-value="values.configurationValues[String(configuration.id)]"
                 :type="configuration.dataType === ConfigurationDataType.Integer ? 'number' : 'text'"
                 class="mt-2"
                 :disabled="gamesLoading"
-                @update:model-value="configValues[configuration.id] = String($event)"
+                @update:model-value="setConfigurationValue(configuration.id, $event)"
               />
             </div>
           </div>
+          <p
+            v-if="errors.configurationValues"
+            class="mt-2 text-xs font-medium text-danger"
+            role="alert"
+          >
+            {{ errors.configurationValues }}
+          </p>
         </div>
 
-        <p v-if="error" role="alert" class="mt-2 text-sm font-medium text-danger">{{ error }}</p>
+        <p v-if="formError" role="alert" class="mt-2 text-sm font-medium text-danger">
+          {{ formError }}
+        </p>
 
         <div class="mt-6 flex flex-wrap gap-2">
           <Button
             type="button"
             variant="outline"
-            :disabled="submitting || !gameId || !seat"
+            :disabled="submitting"
             @click="emit('update:open', false)"
           >
             Cancelar
           </Button>
-          <Button type="submit" :disabled="submitting || !canCreate">
+          <Button type="submit" :disabled="submitting || !values.gameId">
             {{ submitting ? 'Creando…' : 'Crear partida' }}
           </Button>
         </div>

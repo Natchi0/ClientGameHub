@@ -138,6 +138,40 @@ describe('GameInfoPage', () => {
     expect(router.currentRoute.value.query.gameId).toBe('1')
   })
 
+  it('el botón crear partida abre el diálogo con el juego preseleccionado y navega a la pestaña Partidas', async () => {
+    mockedShow.mockResolvedValue(connectFour)
+
+    const { wrapper, router } = await mountAt('/games/1')
+
+    const crear = wrapper.findAll('a, button').find((el) => el.text() === 'Crear partida')
+    expect(crear).toBeDefined()
+    await crear!.trigger('click')
+    await flushPromises()
+
+    const dialogContent = document.querySelector<HTMLElement>('[data-slot="dialog-content"]')
+    expect(dialogContent).not.toBeNull()
+    expect(dialogContent!.textContent).toContain('Crear partida')
+
+    // el listado se queda montado en la pestaña de partidas del juego
+    expect(router.currentRoute.value.name).not.toBe('Matches')
+    expect(router.currentRoute.value.query.tab).toBe('matches')
+  })
+
+  it('en la pestaña Partidas el botón crear partida abre el diálogo sin navegar', async () => {
+    mockedShow.mockResolvedValue(connectFour)
+
+    const { wrapper, router } = await mountAt('/games/1?tab=matches')
+
+    const crear = wrapper.findAll('a, button').find((el) => el.text() === 'Crear partida')
+    expect(crear).toBeDefined()
+    await crear!.trigger('click')
+    await flushPromises()
+
+    const dialogContent = document.querySelector<HTMLElement>('[data-slot="dialog-content"]')
+    expect(dialogContent).not.toBeNull()
+    expect(router.currentRoute.value.query.tab).toBe('matches')
+  })
+
   it('shows the not-found state for a missing game', async () => {
     mockedShow.mockRejectedValue(apiError(404))
 

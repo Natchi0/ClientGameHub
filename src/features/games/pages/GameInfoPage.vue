@@ -1,8 +1,8 @@
 <script setup lang="ts">
   import { computed, onMounted, ref, watch } from 'vue'
   import { isAxiosError } from 'axios'
-  import { ArrowLeft, ArrowRight, Gamepad2, TriangleAlert } from '@lucide/vue'
-  import { RouterLink, useRoute } from 'vue-router'
+  import { ArrowLeft, ArrowRight, Gamepad2, Plus, TriangleAlert } from '@lucide/vue'
+  import { RouterLink, useRoute, useRouter } from 'vue-router'
   import { appConfig } from '@/shared/config'
   import { normalizeApiError } from '@/shared/lib/apiError'
   import { Button } from '@/shared/ui/components/button'
@@ -23,6 +23,7 @@
   }
 
   const route = useRoute()
+  const router = useRouter()
   const game = ref<GameDto | null>(null)
   const loading = ref(true)
   const error = ref<string | null>(null)
@@ -58,6 +59,14 @@
   const activeExtraSection = computed(
     () => extraSections.value.find((section) => section.id === activeTab.value) ?? null,
   )
+
+  /** Abre el diálogo de creación desde el hero; si no estamos en «Partidas», cambia a la pestaña. */
+  function openCreateMatch() {
+    matchCreateOpen.value = true
+    if (activeTab.value !== 'matches') {
+      void router.replace({ query: { tab: 'matches' } })
+    }
+  }
 
   let requestId = 0
 
@@ -190,14 +199,17 @@
             </p>
 
             <div class="mt-6 flex flex-wrap gap-2">
-              <Button as-child>
+              <Button type="button" @click="openCreateMatch">
+                <Plus data-icon="inline-start" aria-hidden="true" /> Crear partida
+              </Button>
+              <Button as-child variant="outline">
                 <RouterLink :to="{ name: 'Matches', query: { gameId: game?.id } }"
-                  >Buscar partida <ArrowRight data-icon="inline-end"
+                  >Buscar partida <ArrowRight data-icon="inline-end" aria-hidden="true"
                 /></RouterLink>
               </Button>
               <Button as-child variant="outline">
                 <RouterLink :to="{ name: 'Games' }">
-                  <ArrowLeft data-icon="inline-start" /> Catálogo
+                  <ArrowLeft data-icon="inline-start" aria-hidden="true" /> Catálogo
                 </RouterLink>
               </Button>
             </div>
