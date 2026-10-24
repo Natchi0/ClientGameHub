@@ -1,7 +1,9 @@
 <script setup lang="ts">
   import { computed, ref, watch } from 'vue'
+  import { useRouter } from 'vue-router'
   import { isAxiosError } from 'axios'
   import { Lock, Users } from '@lucide/vue'
+  import { toast } from 'vue-sonner'
   import { normalizeApiError } from '@/shared/lib/apiError'
   import {
     Dialog,
@@ -40,6 +42,7 @@
   const password = ref('')
   const joining = ref(false)
   const joinError = ref<string | null>(null)
+  const router = useRouter()
 
   const privateMatch = computed(() => props.match?.visibility === MatchVisibility.Private)
   const seats = computed(() =>
@@ -69,11 +72,26 @@
         seat: seat.value,
         password: privateMatch.value ? password.value.trim() : null,
       })
+      toast.success('Te uniste a la partida.')
       emit('joined', updated)
     } catch (caught) {
-      if (isAxiosError(caught) && caught.response?.status === 401)
-        joinError.value = 'Contraseña incorrecta.'
-      else joinError.value = normalizeApiError(caught).message ?? 'No se pudo unir a la partida.'
+      const status = isAxiosError(caught) ? caught.response?.status : undefined
+      const message =
+        status === 401
+          ? 'Contraseña incorrecta.'
+          : (normalizeApiError(caught).message ?? 'No se pudo unir a la partida.')
+
+      // El listado puede estar desactualizado; el backend lo confirma con 409
+      // «El usuario ya participa en la partida.»: no hay nada que volver a intentar.
+      if (status === 409 && message.includes('ya participa') && props.match) {
+        toast.info('Ya participás en esta partida.')
+        emit('update:open', false)
+        void router.push({ name: 'MatchWaiting', params: { matchId: props.match.id } })
+        return
+      }
+
+      joinError.value = message
+      toast.error(message)
     } finally {
       joining.value = false
     }
@@ -99,8 +117,8 @@
       <form @submit.prevent="join" class="mt-5 space-y-4">
         <div>
           <div class="text-sm font-semibold">Asiento</div>
-          <Select v-model="seat" class="w-full" :disabled="!hasSeats || joining">
-            <SelectTrigger>
+          <Select v-model="seat" :disabled="!hasSeats || joining">
+            <SelectTrigger class="w-full">
               <SelectValue placeholder="Asiento" />
             </SelectTrigger>
             <SelectContent>

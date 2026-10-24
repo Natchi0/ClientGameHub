@@ -1,5 +1,6 @@
 <script setup lang="ts">
   import { computed, onMounted, ref, watch } from 'vue'
+  import { useRouter } from 'vue-router'
   import { RefreshCw, Search, SlidersHorizontal, X } from '@lucide/vue'
   import { Button } from '@/shared/ui/components/button'
   import { Input } from '@/shared/ui/components/input'
@@ -19,7 +20,8 @@
   import CreateMatchDialog from '../components/CreateMatchDialog.vue'
   import JoinMatchDialog from '../components/JoinMatchDialog.vue'
   import { MatchStatus, MatchVisibility, type MatchDto, type MatchListQuery } from '../types'
-  import { matchStatusLabel, matchVisibilityLabel } from '../lib/presentation'
+  import { isParticipant, matchStatusLabel, matchVisibilityLabel } from '../lib/presentation'
+  import { toast } from 'vue-sonner'
   import type { PagedResult } from '@/shared/types/pagination'
 
   const props = defineProps<{
@@ -39,6 +41,7 @@
 
   const auth = useAuthStore()
   const gamesStore = useGamesStore()
+  const router = useRouter()
 
   // Estado local de los diálogos, sincronizado bidireccionalmente con los props
   // para que la página pueda abrirlos desde su header.
@@ -181,6 +184,12 @@
   }
 
   function onJoin(match: MatchDto) {
+    // El listado puede estar desactualizado: si ya participamos, directo a la sala.
+    if (isParticipant(match, currentUserId.value)) {
+      toast.info('Ya participás en esta partida.')
+      void router.push({ name: 'MatchWaiting', params: { matchId: match.id } })
+      return
+    }
     joinMatch.value = match
     joinGame.value = props.game ?? gamesStore.games.find((g) => g.id === match.gameId) ?? null
     localJoinOpen.value = true
@@ -189,11 +198,13 @@
   function onCreated(match: MatchDto) {
     localCreateOpen.value = false
     emit('created', match)
+    void router.push({ name: 'MatchWaiting', params: { matchId: match.id } })
   }
 
+  /** Unión correcta: cierra el diálogo y lleva a la sala de espera. */
   function onJoined(match: MatchDto) {
     localJoinOpen.value = false
-    emit('created', match)
+    void router.push({ name: 'MatchWaiting', params: { matchId: match.id } })
   }
 
   onMounted(async () => {
@@ -300,8 +311,8 @@
     >
       <div v-if="!props.game" class="flex items-center gap-2">
         <span class="text-xs font-semibold text-muted-foreground">Juego</span>
-        <Select v-model="gameId" class="w-48">
-          <SelectTrigger>
+        <Select v-model="gameId">
+          <SelectTrigger class="w-48">
             <SelectValue placeholder="Todos los juegos" />
           </SelectTrigger>
           <SelectContent>
@@ -316,8 +327,8 @@
       </div>
       <div class="flex items-center gap-2">
         <span class="text-xs font-semibold text-muted-foreground">Estado</span>
-        <Select v-model="status" class="w-40">
-          <SelectTrigger>
+        <Select v-model="status">
+          <SelectTrigger class="w-40">
             <SelectValue placeholder="Todos los estados" />
           </SelectTrigger>
           <SelectContent>
@@ -333,8 +344,8 @@
       </div>
       <div class="flex items-center gap-2">
         <span class="text-xs font-semibold text-muted-foreground">Visibilidad</span>
-        <Select v-model="visibility" class="w-40">
-          <SelectTrigger>
+        <Select v-model="visibility">
+          <SelectTrigger class="w-40">
             <SelectValue placeholder="Todas" />
           </SelectTrigger>
           <SelectContent>
@@ -426,8 +437,8 @@
       <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-2">
           <span class="text-xs font-semibold text-muted-foreground">por página</span>
-          <Select v-model="pageSize" class="w-20">
-            <SelectTrigger>
+          <Select v-model="pageSize">
+            <SelectTrigger class="w-20">
               <SelectValue :placeholder="String(pageSize)" />
             </SelectTrigger>
             <SelectContent>

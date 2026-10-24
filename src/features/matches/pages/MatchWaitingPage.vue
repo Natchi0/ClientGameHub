@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
   import { isAxiosError } from 'axios'
-  import { ArrowLeft, Check, Copy, Gamepad2, RefreshCw, TriangleAlert } from '@lucide/vue'
+  import { ArrowLeft, Check, Copy, Gamepad2, LoaderCircle, RefreshCw, TriangleAlert } from '@lucide/vue'
   import { RouterLink, useRoute, useRouter } from 'vue-router'
   import { appConfig } from '@/shared/config'
   import { normalizeApiError } from '@/shared/lib/apiError'
@@ -327,7 +327,19 @@
 
           <div v-if="game && pending" class="mt-5 rounded-lg border border-border p-4">
             <div class="flex items-center justify-between gap-3 text-sm">
-              <p class="font-semibold">Progreso para iniciar</p>
+              <p class="flex items-center gap-2 font-semibold">
+                Progreso para iniciar
+                <LoaderCircle
+                  v-if="!minimumReached"
+                  class="size-4 text-primary motion-safe:animate-spin"
+                  aria-hidden="true"
+                />
+                <Check v-else class="size-4 text-primary" aria-hidden="true" />
+                <span v-if="minimumReached" class="sr-only" role="status">
+                  Mínimo de jugadores alcanzado.
+                </span>
+                <span v-else class="sr-only" role="status">Esperando más jugadores…</span>
+              </p>
               <p class="text-muted-foreground">
                 {{ Math.min(players, game.minPlayers) }}/{{ game.minPlayers }} mínimo
               </p>
@@ -359,9 +371,6 @@
             aria-labelledby="invite-heading"
           >
             <h2 id="invite-heading" class="font-bold tracking-[-0.02em]">Invitar jugadores</h2>
-            <p class="mt-1 text-sm text-muted-foreground">
-              Compartí este enlace. Quien lo abra entra directamente a la partida.
-            </p>
             <Input
               class="mt-3 font-mono text-xs"
               :model-value="inviteLink"
@@ -429,19 +438,6 @@
               {{ leaveError }}
             </p>
           </section>
-
-          <div v-if="auth.isGuest" class="rounded-lg border border-border bg-surface p-4 text-sm">
-            <p class="font-semibold">Estás como invitado</p>
-            <p class="mt-1 text-muted-foreground">
-              Si perdés la sesión, no vas a poder recuperar esta cuenta.
-            </p>
-            <RouterLink
-              to="/register"
-              class="mt-2 inline-block font-semibold text-primary hover:underline"
-            >
-              Crear una cuenta
-            </RouterLink>
-          </div>
         </aside>
       </div>
 

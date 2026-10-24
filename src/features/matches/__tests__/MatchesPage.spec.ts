@@ -3,6 +3,7 @@ import { createPinia } from 'pinia'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import MatchesPage from '../pages/MatchesPage.vue'
+import CreateMatchDialog from '../components/CreateMatchDialog.vue'
 import { matchesApi } from '../api/matchesApi'
 import { gamesApi } from '@/features/games/api/gamesApi'
 import type { PagedResult } from '@/shared/types/pagination'
@@ -28,6 +29,8 @@ vi.mock('@/features/games/api/gamesApi', () => ({
 
 const mockedIndex = vi.mocked(matchesApi.index)
 const mockedGamesIndex = vi.mocked(gamesApi.index)
+const mockedJoin = vi.mocked(matchesApi.join)
+const mockedCreateCustom = vi.mocked(matchesApi.createCustom)
 
 function makeGame(id: number, overrides: Partial<GameDto> = {}): GameDto {
   return {
@@ -110,6 +113,8 @@ describe('MatchesPage', () => {
   beforeEach(() => {
     mockedIndex.mockReset()
     mockedGamesIndex.mockReset()
+    mockedJoin.mockReset()
+    mockedCreateCustom.mockReset()
     mockedGamesIndex.mockResolvedValue([])
     mockedIndex.mockResolvedValue(result)
   })
@@ -317,5 +322,71 @@ describe('MatchesPage', () => {
     const dialogContent = document.querySelector<HTMLElement>('[data-slot="dialog-content"]')
     expect(dialogContent).not.toBeNull()
     expect(dialogContent!.textContent).toContain('Crear partida')
+  })
+
+  it('al unirse correctamente navega a la sala de espera', async () => {
+    mockedGamesIndex.mockResolvedValue([makeGame(1, { maxPlayers: 4 })])
+    mockedJoin.mockResolvedValue({
+      ...pendingMatch,
+      participants: [
+        ...pendingMatch.participants,
+        { id: 11, userId: 6, nickname: 'Beto', avatar: null, seat: 2, type: ParticipantType.Player },
+      ],
+    })
+    const { wrapper, router } = await mountPage()
+    await flushPromises()
+
+    const unirse = () =>
+      wrapper.findAll('table tbody tr td button').find((button) => button.text() === 'Unirse')
+    expect(unirse()).toBeDefined()
+    await unirse()!.trigger('click')
+    await flushPromises()
+
+    const dialogContent = document.querySelector<HTMLElement>('[data-slot="dialog-content"]')
+    expect(dialogContent).not.toBeNull()
+
+    const form = dialogContent!.querySelector('form')
+    form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    await flushPromises()
+
+    expect(mockedJoin).toHaveBeenCalledWith(
+      7,
+      expect.objectContaining({ type: ParticipantType.Player, seat: 2, password: null }),
+    )
+    expect(router.currentRoute.value.name).toBe('MatchWaiting')
+    expect(router.currentRoute.value.params.matchId).toBe('7')
+  })
+
+  it('al crear una partida correctamente navega a la sala de espera', async () => {
+    mockedCreateCustom.mockResolvedValue(pendingMatch)
+    const { wrapper, router } = await mountPage()
+    await flushPromises()
+
+    const crear = wrapper.findAll('button').find((button) => button.text() === 'Crear partida')
+    expect(crear).toBeDefined()
+    await crear!.trigger('click')
+    await flushPromises()
+
+    // Los selects de reka-ui no son fiables en jsdom; se asignan los valores al modelo directo.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const vm = (wrapper.findComponent(CreateMatchDialog).vm as any)
+    vm.values.gameId = 1
+    vm.values.seat = 1
+    await flushPromises()
+
+    const dialogContent = document.querySelector<HTMLElement>('[data-slot="dialog-content"]')
+    const form = dialogContent!.querySelector('form')
+    form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    await flushPromises()
+
+    expect(mockedCreateCustom).toHaveBeenCalledWith({
+      gameId: 1,
+      visibility: MatchVisibility.Public,
+      password: null,
+      seat: 1,
+      configurations: [],
+    })
+    expect(router.currentRoute.value.name).toBe('MatchWaiting')
+    expect(router.currentRoute.value.params.matchId).toBe('7')
   })
 })

@@ -3,6 +3,7 @@
   import { RouterView, useRoute } from 'vue-router'
   import { resolveLayout } from '@/app/layouts'
   import { appConfig } from '@/shared/config'
+  import { Toaster } from '@/shared/ui/components/sonner'
   import { realtimeClient, useRealtimeConnection } from '@/shared/composables/useRealtimeConnection'
 
   const route = useRoute()
@@ -35,4 +36,5 @@
   <component :is="layout">
     <RouterView />
   </component>
+  <Toaster position="top-center" rich-colors :expanded="true" />
 </template>

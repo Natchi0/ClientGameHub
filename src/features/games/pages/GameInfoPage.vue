@@ -332,8 +332,8 @@
       <MatchesList
         v-else-if="activeTab === 'matches'"
         :game="game ?? undefined"
-        :create-open="matchCreateOpen"
-        :join-open="matchJoinOpen"
+        v-model:createOpen="matchCreateOpen"
+        v-model:joinOpen="matchJoinOpen"
       />
       <component v-else-if="activeExtraSection" :is="activeExtraSection.component" :game="game" />
     </template>

@@ -167,8 +167,8 @@
         <div class="grid gap-4 sm:grid-cols-2">
           <div v-if="!props.game">
             <div class="text-sm font-semibold">Juego</div>
-            <Select v-model="values.gameId" class="w-full" :disabled="gamesLoading">
-              <SelectTrigger>
+            <Select v-model="values.gameId" :disabled="gamesLoading">
+              <SelectTrigger class="w-full">
                 <SelectValue placeholder="Elegí un juego" />
               </SelectTrigger>
               <SelectContent>
@@ -187,12 +187,8 @@
 
           <div>
             <div class="text-sm font-semibold">Visibilidad</div>
-            <Select
-              v-model="values.visibility"
-              class="w-full"
-              :disabled="!values.gameId || gamesLoading"
-            >
-              <SelectTrigger>
+            <Select v-model="values.visibility" :disabled="!values.gameId || gamesLoading">
+              <SelectTrigger class="w-full">
                 <SelectValue placeholder="Elegí una visibilidad" />
               </SelectTrigger>
               <SelectContent>
@@ -211,8 +207,8 @@
 
           <div>
             <div class="text-sm font-semibold">Tu asiento</div>
-            <Select v-model="values.seat" class="w-full" :disabled="!values.gameId || gamesLoading">
-              <SelectTrigger>
+            <Select v-model="values.seat" :disabled="!values.gameId || gamesLoading">
+              <SelectTrigger class="w-full">
                 <SelectValue
                   :placeholder="selectedGame ? 'Elegí un asiento' : 'Elegí un juego primero'"
                 />
@@ -293,11 +289,11 @@
               <Select
                 v-if="configuration.dataType === ConfigurationDataType.Select"
                 :model-value="values.configurationValues[String(configuration.id)]"
-                class="mt-2 w-full"
+                class="mt-2"
                 :disabled="gamesLoading"
                 @update:model-value="setConfigurationValue(configuration.id, $event)"
               >
-                <SelectTrigger :id="`dialog-config-${configuration.id}`">
+                <SelectTrigger :id="`dialog-config-${configuration.id}`" class="w-full">
                   <SelectValue
                     :placeholder="configuration.required ? 'Elegí una opción' : 'Predeterminado'"
                   />
@@ -316,11 +312,11 @@
               <Select
                 v-else-if="configuration.dataType === ConfigurationDataType.Boolean"
                 :model-value="values.configurationValues[String(configuration.id)]"
-                class="mt-2 w-full"
+                class="mt-2"
                 :disabled="gamesLoading"
                 @update:model-value="setConfigurationValue(configuration.id, $event)"
               >
-                <SelectTrigger :id="`dialog-config-${configuration.id}`">
+                <SelectTrigger :id="`dialog-config-${configuration.id}`" class="w-full">
                   <SelectValue placeholder="Predeterminado" />
                 </SelectTrigger>
                 <SelectContent>
