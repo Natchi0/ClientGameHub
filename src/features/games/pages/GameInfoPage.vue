@@ -6,7 +6,7 @@
   import { appConfig } from '@/shared/config'
   import { normalizeApiError } from '@/shared/lib/apiError'
   import { Button } from '@/shared/ui/components/button'
-  import MatchmakingPanel from '@/features/matches/components/MatchmakingPanel.vue'
+  import MatchesList from '@/features/matches/components/MatchesList.vue'
   import { gamesApi } from '../api/gamesApi'
   import {
     formatDuration,
@@ -27,7 +27,8 @@
   const loading = ref(true)
   const error = ref<string | null>(null)
   const notFound = ref(false)
-  const tabsNav = ref<HTMLElement | null>(null)
+  const matchCreateOpen = ref(false)
+  const matchJoinOpen = ref(false)
 
   const visual = computed(() => (game.value ? getGameVisual(game.value) : null))
   const players = computed(() =>
@@ -87,11 +88,6 @@
     } finally {
       if (current === requestId) loading.value = false
     }
-  }
-
-  function scrollToSections() {
-    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false
-    tabsNav.value?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' })
   }
 
   onMounted(load)
@@ -177,16 +173,6 @@
                   game.hidden ? 'text-danger' : 'text-primary',
                 ]"
               >
-                <span
-                  :class="['size-2 rounded-full', game.hidden ? 'bg-danger' : 'bg-primary']"
-                  aria-hidden="true"
-                />
-                {{ game.hidden ? 'No disponible' : 'Disponible' }}
-              </span>
-              <span
-                class="rounded-md bg-background px-2 py-0.5 text-xs font-semibold text-muted-foreground"
-              >
-                v{{ game.version }}
               </span>
             </div>
 
@@ -205,9 +191,9 @@
 
             <div class="mt-6 flex flex-wrap gap-2">
               <Button as-child>
-                <RouterLink :to="{ query: { tab: 'matches' } }" @click="scrollToSections">
-                  Buscar partida <ArrowRight data-icon="inline-end" />
-                </RouterLink>
+                <RouterLink :to="{ name: 'Matches', query: { gameId: game?.id } }"
+                  >Buscar partida <ArrowRight data-icon="inline-end"
+                /></RouterLink>
               </Button>
               <Button as-child variant="outline">
                 <RouterLink :to="{ name: 'Games' }">
@@ -240,7 +226,7 @@
       <nav
         ref="tabsNav"
         aria-label="Secciones del juego"
-        class="flex gap-1 overflow-x-auto border-b border-border"
+        class="flex gap-1 overflow-x-auto overflow-y-clip border-b border-border"
       >
         <RouterLink
           v-for="tab in tabs"
@@ -331,9 +317,13 @@
         </p>
       </section>
 
-      <MatchmakingPanel v-else-if="activeTab === 'matches'" :game="game" />
-
-      <component :is="activeExtraSection.component" v-else-if="activeExtraSection" :game="game" />
+      <MatchesList
+        v-else-if="activeTab === 'matches'"
+        :game="game ?? undefined"
+        :create-open="matchCreateOpen"
+        :join-open="matchJoinOpen"
+      />
+      <component v-else-if="activeExtraSection" :is="activeExtraSection.component" :game="game" />
     </template>
   </div>
 </template>

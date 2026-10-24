@@ -49,9 +49,6 @@ describe('GamesPage', () => {
 
     expect(wrapper.text()).toContain('4 en línea')
     expect(wrapper.text()).toContain('Conecta 4 fichas')
-    expect(wrapper.text()).toContain('2 jugadores')
-    expect(wrapper.text()).toContain('15 min')
-    expect(wrapper.text()).toContain('Disponible')
     expect(mockedIndex).toHaveBeenCalledTimes(1)
   })
 

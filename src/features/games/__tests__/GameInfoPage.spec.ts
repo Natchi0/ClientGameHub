@@ -80,6 +80,7 @@ async function mountAt(path: string) {
     routes: [
       { path: '/games', name: 'Games', component: { template: '<div />' } },
       { path: '/games/:gameId(\\d+)', name: 'GameInfo', component: GameInfoPage },
+      { path: '/matches', name: 'Matches', component: { template: '<div />' } },
     ],
   })
 
@@ -120,19 +121,21 @@ describe('GameInfoPage', () => {
     expect(mockedShow).toHaveBeenCalledWith(1)
   })
 
-  it('navigates between the information, rules and matchmaking sections', async () => {
+  it('el botón buscar partida navega al listado de partidas del juego', async () => {
     mockedShow.mockResolvedValue(connectFour)
 
-    const { wrapper, router } = await mountAt('/games/1?tab=rules')
+    const { wrapper, router } = await mountAt('/games/1')
 
-    expect(wrapper.text()).toContain('Cómo se juega')
-    expect(wrapper.text()).toContain('Gana quien conecte 4 en línea')
+    expect(wrapper.text()).toContain('Información')
+    expect(wrapper.text()).toContain('Reglas')
 
-    await router.push('/games/1?tab=matches')
+    const buscar = wrapper.findAll('a, button').find((el) => el.text() === 'Buscar partida')
+    expect(buscar).toBeDefined()
+    await buscar!.trigger('click')
     await flushPromises()
 
-    expect(wrapper.text()).toContain('Matchmaking')
-    expect(wrapper.text()).toContain('Partida rápida')
+    expect(router.currentRoute.value.name).toBe('Matches')
+    expect(router.currentRoute.value.query.gameId).toBe('1')
   })
 
   it('shows the not-found state for a missing game', async () => {

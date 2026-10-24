@@ -48,6 +48,12 @@
           active-class="bg-muted text-foreground"
           >Juegos</RouterLink
         >
+        <RouterLink
+          to="/matches"
+          class="rounded-md px-3 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          active-class="bg-muted text-foreground"
+          >Partidas</RouterLink
+        >
         <a
           href="#friends"
           class="rounded-md px-3 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
@@ -96,6 +102,12 @@
           class="rounded-md px-3 py-2 text-sm font-semibold hover:bg-muted"
           @click="menuOpen = false"
           >Juegos</RouterLink
+        >
+        <RouterLink
+          to="/matches"
+          class="rounded-md px-3 py-2 text-sm font-semibold hover:bg-muted"
+          @click="menuOpen = false"
+          >Partidas</RouterLink
         >
         <a
           href="#friends"

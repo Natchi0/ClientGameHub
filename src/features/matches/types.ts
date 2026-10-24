@@ -63,6 +63,7 @@ interface MatchListQuery {
   participantUserId?: number
   createdFrom?: string
   createdTo?: string
+  search?: string
   page?: number
   pageSize?: number
   sort?: string

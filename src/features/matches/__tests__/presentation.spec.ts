@@ -100,6 +100,6 @@ describe('match presentation helpers', () => {
     expect(buildInviteLink('abc 123', 'https://gamehub.test')).toBe(
       'https://gamehub.test/join?code=abc%20123',
     )
-    expect(generatePassword()).toMatch(/^[A-HJ-NP-Za-km-z2-9]{10}$/)
+    expect(generatePassword()).toMatch(/^[A-HJ-NP-Za-km-z2-9!"#$%&/?@~¨*_:;,.^.-]{10}$/)
   })
 })

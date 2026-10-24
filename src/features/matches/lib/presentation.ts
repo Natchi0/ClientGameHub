@@ -170,9 +170,9 @@ export function extractJoinCode(value: string): string {
   return text
 }
 
-/** Password aleatoria para compartir; evita caracteres ambiguos. */
+/** Password aleatoria para compartir*/
 export function generatePassword(length = 10): string {
-  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789'
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!"#$%&/?@~^¨*_:;,.'
   const cryptoApi = globalThis.crypto
 
   if (cryptoApi?.getRandomValues) {
